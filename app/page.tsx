@@ -1,26 +1,13 @@
-'use client';
+import { redirect } from 'next/navigation';
+import AuthedView from './AuthedView';
+import { getToken } from '../lib/auth-helpers';
 
-import { useEffect } from 'react';
-import { socket } from './socket';
+export default async function Home() {
+    const session = await getToken();
 
-export default function Home() {
-    useEffect(() => {
-        socket.connect();
+    if (!session) {
+        redirect('/sign-in');
+    }
 
-        socket.on('helloClient', (data) => {
-            console.log(data);
-
-            socket.emit('helloServer', `Hello server! From ${socket.id}`);
-        });
-
-        return () => {
-            socket.disconnect();
-        };
-    }, []);
-
-    return (
-        <div>
-            <h1>Microbe Messaging</h1>
-        </div>
-    );
+    return <AuthedView />;
 }
