@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { Box, Container, Heading, VStack, Card } from '@chakra-ui/react';
 import LogoutButton from './LogoutButton';
 import ThreadsList from './ThreadsList';
-import { socket } from './socket';
+import { getSocket } from './socket';
 import { Thread } from '@/lib/data-types/thread';
 
 export default function AuthedView() {
     const [threads, setThreads] = useState<Thread[]>([]);
 
     useEffect(() => {
+        const socket = getSocket();
         socket.connect();
 
         socket.emit('requestThreads');
