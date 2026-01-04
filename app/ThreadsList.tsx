@@ -24,9 +24,9 @@ export default function ThreadsList({
 
     return (
         <VStack gap={4} align="stretch">
-            {threads.map((thread, index) => (
+            {threads.map((thread) => (
                 <Card.Root
-                    key={index}
+                    key={thread.otherUser.id}
                     variant="outline"
                     _hover={{ bg: 'gray.50', cursor: 'pointer' }}
                     transition="background 0.2s"

@@ -30,9 +30,9 @@ export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> 
         currentTokenCache = currentToken;
         socketInstance = io(URL, {
             autoConnect: false,
-            extraHeaders: {
-                authorization: `Bearer ${currentToken}`,
-            },
+            extraHeaders: currentToken
+                ? { authorization: `Bearer ${currentToken}` }
+                : {},
         });
     }
     

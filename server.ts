@@ -12,6 +12,7 @@ import { Thread } from './lib/data-types/thread';
 import { JWT_CONFIG } from './lib/jwt-config';
 import { getThreadMessages } from './lib/ws-functions/getThreadMessages';
 import { getThreads } from './lib/ws-functions/getThreads';
+import { sendMessage } from './lib/ws-functions/sendMessage';
 
 type User = {
     id: number;
@@ -47,6 +48,7 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
     requestThreads: () => void;
     requestThreadMessages: (otherUserId: number) => void;
+    sendMessage: (content: string, toUserId: number) => void;
 }
 
 const jwtDecodeOptions = {
@@ -123,6 +125,19 @@ app.prepare().then(() => {
 
             socket.emit('sendThreadMessages', messages);
         });
+
+        socket.on('sendMessage', async (content, sentToId) => {
+            const sentById = socket.request.user!.id;
+
+            await sendMessage({
+                sentById,
+                sentToId,
+                content,
+            });
+
+            socket.emit('sendThreads', await getThreads(sentById));
+            socket.emit('sendThreadMessages', await getThreadMessages({ userId: sentById, otherUserId: sentToId }));
+        })
     });
 
     httpServer

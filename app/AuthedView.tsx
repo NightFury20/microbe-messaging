@@ -2,7 +2,7 @@
 
 import { Message } from '@/lib/data-types/message';
 import { Thread } from '@/lib/data-types/thread';
-import { Box, Container, Flex, Heading } from '@chakra-ui/react';
+import { Box, Button, Container, Flex, Heading, Input } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import LogoutButton from './LogoutButton';
 import { MessagesList } from './MessagesList';
@@ -13,6 +13,7 @@ export default function AuthedView() {
     const [threads, setThreads] = useState<Thread[]>([]);
     const [threadMessages, setThreadMessages] = useState<Message[]>([]);
     const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
+    const [messageInput, setMessageInput] = useState('');
 
     useEffect(() => {
         const socket = getSocket();
@@ -36,10 +37,11 @@ export default function AuthedView() {
 
         const socket = getSocket();
         const currentUserId = selectedThread.otherUser.id;
+        let isActive = true;
 
         socket.on('sendThreadMessages', (messages) => {
             // Only update if this is still the selected thread
-            if (selectedThread?.otherUser.id === currentUserId) {
+            if (isActive) {
                 setThreadMessages(messages);
             }
         });
@@ -47,9 +49,19 @@ export default function AuthedView() {
         socket.emit('requestThreadMessages', currentUserId);
 
         return () => {
+            isActive = false;
             socket.off('sendThreadMessages');
         };
     }, [selectedThread]);
+
+    const handleSendMessage = () => {
+        if (!selectedThread || !messageInput.trim()) return;
+        
+        const socket = getSocket();
+        socket.emit('sendMessage', messageInput, selectedThread.otherUser.id);
+        
+        setMessageInput('');
+    };
 
     return (
         <Box minH="100vh" display="flex" flexDirection="column">
@@ -93,8 +105,50 @@ export default function AuthedView() {
                     </Box>
 
                     {/* Right Column - Messages Area */}
-                    <Box flex="2" bg="gray.800" height="100%">
-                        <MessagesList messages={threadMessages} />
+                    <Box
+                        flex="2"
+                        bg="gray.800"
+                        height="100%"
+                        display="flex"
+                        flexDirection="column"
+                    >
+                        <Box flex="1" overflowY="auto">
+                            <MessagesList messages={threadMessages} />
+                        </Box>
+                        
+                        {/* Message Input UI - Only visible when thread is selected */}
+                        {selectedThread && (
+                            <Box
+                                p={4}
+                                borderTop="1px solid"
+                                borderColor="gray.700"
+                                bg="gray.900"
+                            >
+                                <Flex gap={2}>
+                                    <Input
+                                        value={messageInput}
+                                        onChange={(e) => setMessageInput(e.target.value)}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleSendMessage();
+                                            }
+                                        }}
+                                        placeholder="Type a message..."
+                                        bg="gray.800"
+                                        borderColor="gray.600"
+                                        _hover={{ borderColor: 'gray.500' }}
+                                        _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px var(--chakra-colors-blue-500)' }}
+                                    />
+                                    <Button
+                                        onClick={handleSendMessage}
+                                        colorScheme="blue"
+                                        disabled={!messageInput.trim()}
+                                    >
+                                        Send
+                                    </Button>
+                                </Flex>
+                            </Box>
+                        )}
                     </Box>
                 </Flex>
             </Container>
