@@ -1,13 +1,17 @@
-"use client";
+'use client';
 
-import { Box, Card, Text, VStack, Badge, HStack } from '@chakra-ui/react';
 import { Thread } from '@/lib/data-types/thread';
+import { Badge, Box, Card, HStack, Text, VStack } from '@chakra-ui/react';
 
 interface ThreadsListProps {
     threads: Thread[];
+    onThreadSelect: (thread: Thread) => void;
 }
 
-export default function ThreadsList({ threads }: ThreadsListProps) {
+export default function ThreadsList({
+    threads,
+    onThreadSelect,
+}: ThreadsListProps) {
     if (threads.length === 0) {
         return (
             <Box textAlign="center" py={8}>
@@ -26,6 +30,7 @@ export default function ThreadsList({ threads }: ThreadsListProps) {
                     variant="outline"
                     _hover={{ bg: 'gray.50', cursor: 'pointer' }}
                     transition="background 0.2s"
+                    onClick={() => onThreadSelect(thread)}
                 >
                     <Card.Body>
                         <HStack justify="space-between" align="start">
@@ -50,7 +55,9 @@ export default function ThreadsList({ threads }: ThreadsListProps) {
                                     </Badge>
                                 )}
                                 <Text fontSize="xs" color="gray.500">
-                                    {new Date(thread.lastMessage.createdAt).toLocaleDateString()}
+                                    {new Date(
+                                        thread.lastMessage.createdAt,
+                                    ).toLocaleDateString()}
                                 </Text>
                             </VStack>
                         </HStack>

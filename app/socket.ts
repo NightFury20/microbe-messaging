@@ -7,7 +7,9 @@ import { io, Socket } from 'socket.io-client';
 const URL =
     process.env.NODE_ENV === 'production' ? undefined : 'http://localhost:3000';
 
-let socketInstance: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+export type ClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+
+let socketInstance: ClientSocket | null = null;
 let currentTokenCache: string | undefined = undefined;
 
 /**
