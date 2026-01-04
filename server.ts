@@ -7,7 +7,11 @@ import {
 import passport from 'passport';
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 import { Server } from 'socket.io';
+import { Message } from './lib/data-types/message';
+import { Thread } from './lib/data-types/thread';
 import { JWT_CONFIG } from './lib/jwt-config';
+import { getThreadMessages } from './lib/ws-functions/getThreadMessages';
+import { getThreads } from './lib/ws-functions/getThreads';
 
 type User = {
     id: number;
@@ -36,10 +40,13 @@ const handler = app.getRequestHandler();
 // event types
 export interface ServerToClientEvents {
     helloClient: (a: string) => void;
+    sendThreads: (threads: Thread[]) => void;
+    sendThreadMessages: (messages: Message[]) => void;
 }
 
 export interface ClientToServerEvents {
-    helloServer: (a: string) => void;
+    requestThreads: () => void;
+    requestThreadMessages: (otherUserId: number) => void;
 }
 
 const jwtDecodeOptions = {
@@ -96,9 +103,26 @@ app.prepare().then(() => {
     io.on('connection', (socket) => {
         console.log('new conn:', socket.id, socket.request.user);
 
-        socket.emit('helloClient', `Hello ${socket.id}`);
+        if (!socket.request.user) {
+            console.log('unauthenticated socket connection, disconnecting');
+            socket.disconnect();
+            return;
+        }
 
-        socket.on('helloServer', (data) => console.log(data));
+        socket.on('requestThreads', async () => {
+            const threads = await getThreads(socket.request.user!.id);
+
+            socket.emit('sendThreads', threads);
+        });
+
+        socket.on('requestThreadMessages', async (otherUserId) => {
+            const messages = await getThreadMessages({
+                userId: socket.request.user!.id,
+                otherUserId,
+            });
+
+            socket.emit('sendThreadMessages', messages);
+        });
     });
 
     httpServer
