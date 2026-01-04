@@ -14,7 +14,7 @@ export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
     {
         autoConnect: false,
         extraHeaders: {
-            authorization: `bearer ${token}`,
+            authorization: `Bearer ${token}`,
         },
     },
 );
