@@ -44,6 +44,7 @@ export interface ClientToServerEvents {
 
 const jwtDecodeOptions = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    algorithm: JWT_CONFIG.algorithm,
     secretOrKey: JWT_CONFIG.secret,
     issuer: JWT_CONFIG.issuer,
     audience: JWT_CONFIG.audience,
@@ -73,11 +74,19 @@ app.prepare().then(() => {
         ) => {
             const isHandshake = req._query.sid === undefined;
             if (isHandshake) {
-                passport.authenticate('jwt', { session: false })(
-                    req,
-                    res,
-                    next,
-                );
+                passport.authenticate(
+                    'jwt',
+                    { session: false },
+                    (err: Error | null, user: User | false) => {
+                        if (err || !user) {
+                            res.writeHead(401);
+                            res.end('Unauthorized');
+                            return;
+                        }
+                        req.user = user;
+                        next();
+                    },
+                )(req, res, next);
             } else {
                 next();
             }
