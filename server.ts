@@ -8,6 +8,8 @@ import passport from 'passport';
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 import { Server } from 'socket.io';
 import { JWT_CONFIG } from './lib/jwt-config';
+import { Thread } from './lib/data-types/thread';
+import { getThreads } from './lib/ws-functions/getThreads';
 
 type User = {
     id: number;
@@ -36,10 +38,11 @@ const handler = app.getRequestHandler();
 // event types
 export interface ServerToClientEvents {
     helloClient: (a: string) => void;
+    sendThreads: (threads: Thread[]) => void;
 }
 
 export interface ClientToServerEvents {
-    helloServer: (a: string) => void;
+    requestThreads: () => void;
 }
 
 const jwtDecodeOptions = {
@@ -96,9 +99,13 @@ app.prepare().then(() => {
     io.on('connection', (socket) => {
         console.log('new conn:', socket.id, socket.request.user);
 
-        socket.emit('helloClient', `Hello ${socket.id}`);
+        socket.on('requestThreads', async () => {
+            console.log('load threads for user:', socket.request.user);
 
-        socket.on('helloServer', (data) => console.log(data));
+            const threads = await getThreads(socket.request.user!.id);
+
+            socket.emit('sendThreads', threads);
+        });
     });
 
     httpServer

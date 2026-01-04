@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Container, Heading, VStack, Card } from '@chakra-ui/react';
 import LogoutButton from './LogoutButton';
+import ThreadsList from './ThreadsList';
 import { socket } from './socket';
+import { Thread } from '@/lib/data-types/thread';
 
 export default function AuthedView() {
+    const [threads, setThreads] = useState<Thread[]>([]);
+
     useEffect(() => {
         socket.connect();
 
-        socket.on('helloClient', (data) => {
-            console.log(data);
+        socket.emit('requestThreads');
 
-            socket.emit('helloServer', `Hello server! From ${socket.id}`);
+        socket.on('sendThreads', (threads) => {
+            setThreads(threads);
         });
 
         return () => {
@@ -39,6 +43,17 @@ export default function AuthedView() {
                             <Box textAlign="center" pt={4}>
                                 <LogoutButton />
                             </Box>
+                        </VStack>
+                    </Card.Body>
+                </Card.Root>
+
+                <Card.Root width="100%" shadow="lg">
+                    <Card.Body>
+                        <VStack gap={4} align="stretch">
+                            <Heading as="h2" size="lg" color="white">
+                                Threads
+                            </Heading>
+                            <ThreadsList threads={threads} />
                         </VStack>
                     </Card.Body>
                 </Card.Root>

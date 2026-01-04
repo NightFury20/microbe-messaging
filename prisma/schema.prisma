@@ -19,4 +19,20 @@ model User {
   createdAt      DateTime @default(now())
   username       String   @unique
   hashedPassword String
+
+  sentMessages    Message[] @relation(name: "sentBy")
+  receivedMessage Message[] @relation(name: "sentTo")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  content   String
+  read      Boolean  @default(false)
+
+  sentBy    User @relation(fields: [sentById], references: [id], name: "sentBy")
+  sentById  Int
+
+  sentTo    User @relation(fields: [sentToId], references: [id], name: "sentTo")
+  sentToId  Int
 }
