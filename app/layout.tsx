@@ -1,5 +1,4 @@
 import { Provider as ChakraUiProvider } from '@/components/ui/provider';
-import { Box, Heading } from '@chakra-ui/react';
 import type { Metadata } from 'next';
 
 import './globals.css';
@@ -17,9 +16,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body>
-                <ChakraUiProvider>
-                    {children}
-                </ChakraUiProvider>
+                <ChakraUiProvider>{children}</ChakraUiProvider>
             </body>
         </html>
     );
