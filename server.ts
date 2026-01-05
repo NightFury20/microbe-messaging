@@ -5,13 +5,14 @@ import {
     type ServerResponse,
 } from 'node:http';
 import passport from 'passport';
-import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
-import { Server } from 'socket.io';
+import { Strategy as JwtStrategy } from 'passport-jwt';
+import { Socket as IOSocket, Server } from 'socket.io';
 import { Message } from './lib/data-types/message';
 import { Thread } from './lib/data-types/thread';
-import { JWT_CONFIG } from './lib/jwt-config';
+import { JWT_DECODE_OPTIONS } from './lib/jwt-config';
 import { getThreadMessages } from './lib/ws-functions/getThreadMessages';
 import { getThreads } from './lib/ws-functions/getThreads';
+import { markChatAsRead } from './lib/ws-functions/markChatAsRead';
 import { sendMessage } from './lib/ws-functions/sendMessage';
 
 type User = {
@@ -38,32 +39,35 @@ const port = 3000;
 const app = next({ dev, hostname, port });
 const handler = app.getRequestHandler();
 
+export type ClientData = {
+    username: string;
+    threads: Thread[];
+    currentChat: Message[];
+};
+
 // event types
 export interface ServerToClientEvents {
-    helloClient: (a: string) => void;
-    sendThreads: (threads: Thread[]) => void;
-    sendThreadMessages: (messages: Message[]) => void;
+    sendData: (data: ClientData) => void;
+    newDataReady: () => void;
 }
 
 export interface ClientToServerEvents {
-    requestThreads: () => void;
-    requestThreadMessages: (otherUserId: number) => void;
     sendMessage: (content: string, toUserId: number) => void;
+    requestData: (selectedChatUserId: number | null) => void;
 }
 
-const jwtDecodeOptions = {
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    algorithm: JWT_CONFIG.algorithm,
-    secretOrKey: JWT_CONFIG.secret,
-    issuer: JWT_CONFIG.issuer,
-    audience: JWT_CONFIG.audience,
-};
-
 passport.use(
-    new JwtStrategy(jwtDecodeOptions, (payload, done) => {
+    new JwtStrategy(JWT_DECODE_OPTIONS, (payload, done) => {
         return done(null, payload.data);
     }),
 );
+
+type ServerSocket = IOSocket<
+    ClientToServerEvents,
+    ServerToClientEvents,
+    Record<string, never>,
+    AuthenticatedRequest
+>;
 
 app.prepare().then(() => {
     const httpServer = createServer(handler);
@@ -75,6 +79,7 @@ app.prepare().then(() => {
         AuthenticatedRequest // Socket data type includes our authenticated request
     >(httpServer);
 
+    // Middleware to authenticate socket connections
     io.engine.use(
         (
             req: AuthenticatedRequest,
@@ -103,41 +108,23 @@ app.prepare().then(() => {
     );
 
     io.on('connection', (socket) => {
-        console.log('new conn:', socket.id, socket.request.user);
-
+        // If user is not authenticated, disconnect the socket
         if (!socket.request.user) {
             console.log('unauthenticated socket connection, disconnecting');
             socket.disconnect();
             return;
         }
 
-        socket.on('requestThreads', async () => {
-            const threads = await getThreads(socket.request.user!.id);
+        const userRoom = `${socket.request.user.id}`;
 
-            socket.emit('sendThreads', threads);
-        });
+        // Add user to their own room to allow new messages to them to trigger "newDataReady" events
+        socket.join(userRoom);
 
-        socket.on('requestThreadMessages', async (otherUserId) => {
-            const messages = await getThreadMessages({
-                userId: socket.request.user!.id,
-                otherUserId,
-            });
+        socket.emit('newDataReady');
 
-            socket.emit('sendThreadMessages', messages);
-        });
+        socket.on('requestData', handleRequestData(socket));
 
-        socket.on('sendMessage', async (content, sentToId) => {
-            const sentById = socket.request.user!.id;
-
-            await sendMessage({
-                sentById,
-                sentToId,
-                content,
-            });
-
-            socket.emit('sendThreads', await getThreads(sentById));
-            socket.emit('sendThreadMessages', await getThreadMessages({ userId: sentById, otherUserId: sentToId }));
-        })
+        socket.on('sendMessage', handleSendMessage(socket));
     });
 
     httpServer
@@ -149,3 +136,58 @@ app.prepare().then(() => {
             console.log(`> Ready on http://${hostname}:${port}`);
         });
 });
+
+// Create new Message and emit newDataReady to sender and receiver
+function handleSendMessage(
+    socket: ServerSocket,
+): (content: string, toUserId: number) => void {
+    return async (content, sentToId) => {
+        const sentById = socket.request.user!.id;
+
+        await sendMessage({
+            sentById,
+            sentToId,
+            content,
+        });
+
+        const recievingUserRoom = `${sentToId}`;
+
+        socket.emit('newDataReady');
+
+        socket.to(recievingUserRoom).emit('newDataReady');
+    };
+}
+
+// Mark current chat as read, fetch threads and current chat messages, and emit to client
+function handleRequestData(
+    socket: ServerSocket,
+): (selectedChatUserId: number | null) => void {
+    return async (selectedChatUserId) => {
+        const userId = socket.request.user!.id;
+        const username = socket.request.user!.username;
+
+        // mark current chat as read and fetch its messages
+        let currentChat: Message[] = [];
+
+        if (selectedChatUserId !== null) {
+            await markChatAsRead({
+                receivingUserId: userId,
+                sendingUserId: selectedChatUserId,
+            });
+
+            currentChat = await getThreadMessages({
+                userId,
+                otherUserId: selectedChatUserId,
+            });
+        }
+
+        // fetch threads after marking currentChat as read
+        const threads = await getThreads(userId);
+
+        socket.emit('sendData', {
+            username: username,
+            threads,
+            currentChat,
+        });
+    };
+}

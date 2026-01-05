@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { JWT_CONFIG } from './jwt-config';
+import { JWT_CONFIG, JWT_ENCODE_OPTIONS } from './jwt-config';
 import { prisma } from './prisma';
 
 export async function login(username: string, password: string) {
@@ -51,12 +51,7 @@ export async function login(username: string, password: string) {
             data: returnedUser,
         },
         JWT_CONFIG.secret,
-        {
-            algorithm: JWT_CONFIG.algorithm,
-            issuer: JWT_CONFIG.issuer,
-            audience: JWT_CONFIG.audience,
-            expiresIn: JWT_CONFIG.expiresIn,
-        },
+        JWT_ENCODE_OPTIONS,
     );
 
     // Set cookie

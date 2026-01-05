@@ -18,12 +18,6 @@ export default function RootLayout({
         <html lang="en" suppressHydrationWarning>
             <body>
                 <ChakraUiProvider>
-                    <Box textAlign="center" py={4}>
-                        <Heading as="h1" size="2xl">
-                            Microbe Messaging
-                        </Heading>
-                    </Box>
-
                     {children}
                 </ChakraUiProvider>
             </body>
