@@ -58,6 +58,20 @@ export default function AuthedView() {
         setMessageInput('');
     };
 
+    // Handle username validation for starting new chat
+    const handleCheckRecipientUsername = (
+        username: string,
+        callback: (data: {isValid: boolean, userId: number | null}) => void,
+    ) => {
+        const socket = getSocket();
+        socket.emit('checkRecipientUsername', username, callback);
+    };
+
+    // Handle setting UI to new chat mode
+    const handleStartNewChat = (userId: number) => {
+        setOpenChatUserId(userId);
+    };
+
     if (!data) {
         return <Loading />;
     }
@@ -72,9 +86,9 @@ export default function AuthedView() {
                 <Flex gap={0} h="100%">
                     <ThreadsSidebar
                         threads={threads}
-                        onThreadSelect={(thread) =>
-                            setOpenChatUserId(thread.otherUser.id)
-                        }
+                        onThreadSelect={(thread) => setOpenChatUserId(thread.otherUser.id)}
+                        onStartNewChat={handleStartNewChat}
+                        onValidateUsername={handleCheckRecipientUsername}
                     />
 
                     <MessagesArea

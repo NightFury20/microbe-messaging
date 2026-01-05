@@ -14,6 +14,7 @@ import { getThreadMessages } from './lib/ws-functions/getThreadMessages';
 import { getThreads } from './lib/ws-functions/getThreads';
 import { markChatAsRead } from './lib/ws-functions/markChatAsRead';
 import { sendMessage } from './lib/ws-functions/sendMessage';
+import { validateUserName } from './lib/ws-functions/validateUserName';
 
 type User = {
     id: number;
@@ -45,15 +46,20 @@ export type ClientData = {
     currentChat: Message[];
 };
 
-// event types
+// Server socket event types
 export interface ServerToClientEvents {
     sendData: (data: ClientData) => void;
     newDataReady: () => void;
 }
 
+// Client socket event types
 export interface ClientToServerEvents {
     sendMessage: (content: string, toUserId: number) => void;
     requestData: (selectedChatUserId: number | null) => void;
+    checkRecipientUsername: (
+        username: string,
+        callback: (data: { isValid: boolean; userId: number | null }) => void,
+    ) => void;
 }
 
 passport.use(
@@ -125,6 +131,13 @@ app.prepare().then(() => {
         socket.on('requestData', handleRequestData(socket));
 
         socket.on('sendMessage', handleSendMessage(socket));
+
+        socket.on('checkRecipientUsername', async (username, callback) => {
+            // Simulate checking username validity (replace with actual logic)
+            const isValid = await validateUserName(username);
+
+            callback(isValid);
+        });
     });
 
     httpServer
