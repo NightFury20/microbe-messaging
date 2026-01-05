@@ -28,7 +28,7 @@ export default function ThreadsList({
                 <Card.Root
                     key={thread.otherUser.id}
                     variant="outline"
-                    _hover={{ bg: 'gray.50', cursor: 'pointer' }}
+                    _hover={{ bg: 'gray.500', cursor: 'pointer' }}
                     transition="background 0.2s"
                     onClick={() => onThreadSelect(thread)}
                 >
