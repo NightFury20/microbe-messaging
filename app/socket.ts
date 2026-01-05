@@ -12,11 +12,13 @@ export type ClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 let socketInstance: ClientSocket | null = null;
 let currentTokenCache: string | undefined = undefined;
 
+export type SocketType = Socket<ServerToClientEvents, ClientToServerEvents>;
+
 /**
  * Get or create socket with current token.
  * Disconnects old socket if token has changed.
  */
-export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
+export function getSocket(): SocketType {
     const currentToken = Cookies.get('token');
     
     // If socket exists and token has changed, disconnect it
