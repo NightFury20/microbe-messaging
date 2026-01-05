@@ -14,6 +14,7 @@ interface ThreadsSidebarProps {
         username: string,
         callback: (data: { isValid: boolean; userId: number | null }) => void
     ) => void; // Pass through the validation function
+    selectedThreadId: number | null; // ID of the currently selected thread
 }
 
 export default function ThreadsSidebar({
@@ -21,6 +22,7 @@ export default function ThreadsSidebar({
     onThreadSelect,
     onStartNewChat,
     onValidateUsername,
+    selectedThreadId,
 }: ThreadsSidebarProps) {
     const [isCreatingNewChat, setIsCreatingNewChat] = useState(false);
     const [newChatUsername, setNewChatUsername] = useState('');
@@ -155,7 +157,11 @@ export default function ThreadsSidebar({
             
             {/* Thread List */}
             <Box flex="1" overflowY="auto">
-                <ThreadsList threads={threads} onThreadSelect={onThreadSelect} />
+                <ThreadsList
+                    threads={threads}
+                    onThreadSelect={onThreadSelect}
+                    selectedThreadId={selectedThreadId}
+                />
             </Box>
         </Box>
     );
