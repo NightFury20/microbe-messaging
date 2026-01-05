@@ -6,11 +6,13 @@ import { Badge, Box, Card, HStack, Text, VStack } from '@chakra-ui/react';
 interface ThreadsListProps {
     threads: Thread[];
     onThreadSelect: (thread: Thread) => void;
+    selectedThreadId: number | null;
 }
 
 export default function ThreadsList({
     threads,
     onThreadSelect,
+    selectedThreadId,
 }: ThreadsListProps) {
     if (threads.length === 0) {
         return (
@@ -24,14 +26,18 @@ export default function ThreadsList({
 
     return (
         <VStack gap={4} align="stretch">
-            {threads.map((thread) => (
-                <Card.Root
-                    key={thread.otherUser.id}
-                    variant="outline"
-                    _hover={{ bg: 'gray.500', cursor: 'pointer' }}
-                    transition="background 0.2s"
-                    onClick={() => onThreadSelect(thread)}
-                >
+            {threads.map((thread) => {
+                const isSelected = selectedThreadId === thread.otherUser.id;
+                return (
+                    <Card.Root
+                        key={thread.otherUser.id}
+                        variant="outline"
+                        bg={isSelected ? 'gray.700' : 'transparent'}
+                        borderColor={isSelected ? 'gray.500' : 'gray.700'}
+                        _hover={{ bg: isSelected ? 'gray.600' : 'gray.500', cursor: 'pointer' }}
+                        transition="all 0.2s"
+                        onClick={() => onThreadSelect(thread)}
+                    >
                     <Card.Body>
                         <HStack justify="space-between" align="start">
                             <VStack align="start" gap={1} flex={1}>
@@ -63,7 +69,8 @@ export default function ThreadsList({
                         </HStack>
                     </Card.Body>
                 </Card.Root>
-            ))}
+                );
+            })}
         </VStack>
     );
 }

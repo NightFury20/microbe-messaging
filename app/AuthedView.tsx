@@ -89,6 +89,7 @@ export default function AuthedView() {
                         onThreadSelect={(thread) => setOpenChatUserId(thread.otherUser.id)}
                         onStartNewChat={handleStartNewChat}
                         onValidateUsername={handleCheckRecipientUsername}
+                        selectedThreadId={openChatUserId}
                     />
 
                     <MessagesArea
