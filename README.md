@@ -122,3 +122,7 @@ This is the first area I would address given more time.
 - Data sending is inefficient on reload, since it sends the whole set of username, threads and currently loading chat messages
 - State storage is messy, would like to make a proper global state store
 - Optimistic UI updates would be nice to make it look like messages send instantly
+
+# Troubleshooting
+If you get stuck on a loading screen when returning to the app after logging in, try clearing cookies for localhost:3000.
+Probably your JWT is no longer valid, and the app is not handling that case properly.
